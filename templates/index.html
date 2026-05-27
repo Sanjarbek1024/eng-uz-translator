@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EN → UZ Translator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green-100: #f0faf4;
+      --green-200: #d6f0e0;
+      --green-300: #a8d8bc;
+      --green-400: #6ab98a;
+      --green-500: #3a9b65;
+      --green-600: #2a7a4e;
+      --text-dark: #1a2e23;
+      --text-mid: #4a6657;
+      --text-light: #8aab97;
+      --white: #ffffff;
+      --shadow: 0 4px 24px rgba(42, 122, 78, 0.08);
+      --shadow-lg: 0 12px 48px rgba(42, 122, 78, 0.14);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--green-100);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px;
+      color: var(--text-dark);
+    }
+
+    /* subtle dot grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(var(--green-300) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 780px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 44px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--green-200);
+      color: var(--green-600);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+    }
+
+    .badge .dot {
+      width: 6px; height: 6px;
+      background: var(--green-500);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 400;
+      color: var(--text-dark);
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--green-500);
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--text-mid);
+      font-weight: 300;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      border: 1px solid var(--green-200);
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 260px;
+    }
+
+    .panel:first-child {
+      border-right: 1px solid var(--green-200);
+    }
+
+    .panel-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .lang-flag {
+      font-size: 14px;
+    }
+
+    textarea {
+      flex: 1;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text-dark);
+      line-height: 1.65;
+      background: transparent;
+      placeholder-color: var(--text-light);
+    }
+
+    textarea::placeholder { color: var(--text-light); }
+
+    .char-count {
+      font-size: 12px;
+      color: var(--text-light);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .output-text {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-dark);
+      line-height: 1.65;
+      min-height: 160px;
+    }
+
+    .output-text.placeholder {
+      color: var(--text-light);
+      font-weight: 300;
+      font-style: italic;
+    }
+
+    .loading-dots {
+      display: none;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .loading-dots.active { display: flex; }
+
+    .loading-dots span {
+      width: 7px; height: 7px;
+      background: var(--green-400);
+      border-radius: 50%;
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+
+    .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--green-200);
+    }
+
+    .actions {
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .btn-translate {
+      background: var(--green-500);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 28px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 2px 12px rgba(58, 155, 101, 0.3);
+    }
+
+    .btn-translate:hover {
+      background: var(--green-600);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(58, 155, 101, 0.4);
+    }
+
+    .btn-translate:active { transform: translateY(0); }
+
+    .btn-translate:disabled {
+      background: var(--green-300);
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-clear {
+      background: none;
+      border: 1px solid var(--green-200);
+      border-radius: 10px;
+      padding: 11px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-clear:hover {
+      background: var(--green-100);
+      border-color: var(--green-300);
+    }
+
+    .btn-copy {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--green-200);
+      border-radius: 10px;
+      padding: 11px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-copy:hover {
+      background: var(--green-100);
+      border-color: var(--green-300);
+    }
+
+    .btn-copy.copied {
+      color: var(--green-500);
+      border-color: var(--green-300);
+    }
+
+    .error-msg {
+      display: none;
+      padding: 10px 28px;
+      font-size: 13px;
+      color: #c0392b;
+      background: #fff5f5;
+      border-top: 1px solid #fde0de;
+    }
+
+    footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+
+    footer a {
+      color: var(--green-500);
+      text-decoration: none;
+    }
+
+    /* examples */
+    .examples {
+      margin-top: 20px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .example-chip {
+      background: var(--white);
+      border: 1px solid var(--green-200);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .example-chip:hover {
+      background: var(--green-200);
+      border-color: var(--green-300);
+      color: var(--green-600);
+    }
+
+    @media (max-width: 560px) {
+      .panels { grid-template-columns: 1fr; }
+      .panel:first-child { border-right: none; border-bottom: 1px solid var(--green-200); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">
+        <span class="dot"></span>
+        Seq2Seq · GRU · Attention
+      </div>
+      <h1>English to <em>Uzbek</em></h1>
+      <p class="subtitle">Neural machine translation · trained from scratch</p>
+    </header>
+
+    <div class="card">
+      <div class="panels">
+        <!-- Input -->
+        <div class="panel">
+          <div class="panel-label">
+            <span class="lang-flag">🇬🇧</span> English
+          </div>
+          <textarea
+            id="input-text"
+            placeholder="Type your sentence here…"
+            maxlength="500"
+            autofocus
+            spellcheck="false"
+          ></textarea>
+          <div class="char-count"><span id="char-count">0</span> / 500</div>
+        </div>
+
+        <!-- Output -->
+        <div class="panel">
+          <div class="panel-label">
+            <span class="lang-flag">🇺🇿</span> Uzbek
+          </div>
+          <div id="output-text" class="output-text placeholder">Translation appears here…</div>
+          <div class="loading-dots" id="loading">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="actions">
+        <button class="btn-clear" id="btn-clear">Clear</button>
+        <button class="btn-translate" id="btn-translate">Translate →</button>
+        <button class="btn-copy" id="btn-copy">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Copy
+        </button>
+      </div>
+
+      <div class="error-msg" id="error-msg">Something went wrong. Please try again.</div>
+    </div>
+
+    <!-- Quick example sentences -->
+    <div class="examples">
+      <span class="example-chip" onclick="setExample(this)">I love learning languages</span>
+      <span class="example-chip" onclick="setExample(this)">How are you doing today?</span>
+      <span class="example-chip" onclick="setExample(this)">It is so cold outside</span>
+      <span class="example-chip" onclick="setExample(this)">Thank you very much</span>
+      <span class="example-chip" onclick="setExample(this)">Where is the train station?</span>
+    </div>
+
+    <footer>
+      Built with FastAPI · PyTorch · SentencePiece
+    </footer>
+  </div>
+
+  <script>
+    const inputEl = document.getElementById('input-text');
+    const outputEl = document.getElementById('output-text');
+    const loadingEl = document.getElementById('loading');
+    const charEl = document.getElementById('char-count');
+    const btnTranslate = document.getElementById('btn-translate');
+    const btnCopy = document.getElementById('btn-copy');
+    const btnClear = document.getElementById('btn-clear');
+    const errorEl = document.getElementById('error-msg');
+
+    let debounceTimer;
+
+    // update char counter
+    inputEl.addEventListener('input', () => {
+      charEl.textContent = inputEl.value.length;
+      clearTimeout(debounceTimer);
+      // auto-translate after 800ms pause
+      debounceTimer = setTimeout(() => {
+        if (inputEl.value.trim()) translate();
+      }, 800);
+    });
+
+    // translate on Enter (without Shift)
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        translate();
+      }
+    });
+
+    btnTranslate.addEventListener('click', translate);
+
+    btnClear.addEventListener('click', () => {
+      inputEl.value = '';
+      charEl.textContent = '0';
+      outputEl.textContent = 'Translation appears here…';
+      outputEl.classList.add('placeholder');
+      errorEl.style.display = 'none';
+    });
+
+    btnCopy.addEventListener('click', () => {
+      const text = outputEl.textContent;
+      if (!text || outputEl.classList.contains('placeholder')) return;
+      navigator.clipboard.writeText(text).then(() => {
+        btnCopy.classList.add('copied');
+        btnCopy.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Copied`;
+        setTimeout(() => {
+          btnCopy.classList.remove('copied');
+          btnCopy.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+        }, 2000);
+      });
+    });
+
+    function setExample(el) {
+      inputEl.value = el.textContent;
+      charEl.textContent = el.textContent.length;
+      translate();
+    }
+
+    async function translate() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      // show loading
+      errorEl.style.display = 'none';
+      outputEl.style.display = 'none';
+      loadingEl.classList.add('active');
+      btnTranslate.disabled = true;
+
+      try {
+        const res = await fetch('/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        if (!res.ok) throw new Error('Server error');
+        const data = await res.json();
+
+        outputEl.textContent = data.translation || '—';
+        outputEl.classList.remove('placeholder');
+      } catch {
+        errorEl.style.display = 'block';
+      } finally {
+        loadingEl.classList.remove('active');
+        outputEl.style.display = '';
+        btnTranslate.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
